@@ -287,7 +287,7 @@
       }
     },
 
-    NW: 260, NH: 230, GAP: 20,
+    NW: 200, NH: 170, GAP: 16,
 
     // Positionen aller Zettel in Pixel; Zettel ohne gespeicherte Position werden automatisch in freie Plätze gelegt
     layout(W) {
