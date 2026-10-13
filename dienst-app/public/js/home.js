@@ -287,7 +287,7 @@
       }
     },
 
-    NW: 200, NH: 170, GAP: 16,
+    NW: 260, NH: 230, GAP: 20,
 
     // Positionen aller Zettel in Pixel; Zettel ohne gespeicherte Position werden automatisch in freie Plätze gelegt
     layout(W) {
@@ -385,7 +385,7 @@
       this.boardBox.replaceChildren(cork);
       let bottom = 0;
       cork.querySelectorAll('.pinned').forEach((e) => { bottom = Math.max(bottom, e.offsetTop + e.offsetHeight); });
-      cork.style.height = Math.max(460, bottom + 40) + 'px';
+      cork.style.height = Math.max(Math.round(window.innerHeight * 0.78), 640, bottom + 40) + 'px';
     },
 
     corkNote(n, p, i) {
