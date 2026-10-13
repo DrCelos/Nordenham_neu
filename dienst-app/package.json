@@ -1,0 +1,9 @@
+{
+  "name": "dienst-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dienst-App: Dienstplan, Chat, Pinnwand und Material (PWA auf Netlify + Supabase)",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

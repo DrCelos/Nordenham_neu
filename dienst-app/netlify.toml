@@ -1,0 +1,29 @@
+[build]
+  publish   = "public"
+  command   = "node scripts/stamp-version.js"   # schreibt bei jedem Deploy eine neue Versionsnummer
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Service Worker und Konfiguration nie lange cachen
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/config.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
+
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-store"
