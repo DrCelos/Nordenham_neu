@@ -451,7 +451,7 @@ td.cell.edit:hover { outline: 2px solid var(--primary); outline-offset: -2px; }
 }
 .cork-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; color: rgba(60, 35, 10, .7); font-weight: 600; text-align: center; padding: 16px; }
 .sticky.pinned {
-  position: absolute; width: 260px; min-height: 210px; padding: 28px 16px 14px; font-size: 17px; color: #1f2937;
+  position: absolute; width: 200px; min-height: 150px; padding-top: 24px; color: #1f2937;
   transform: rotate(var(--rot, 0deg)); transition: box-shadow .15s, transform .15s;
 }
 .sticky.pinned .small.muted { color: #5b6472; }
