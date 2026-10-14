@@ -94,6 +94,9 @@
             el('div', { class: 'row tight' },
               el('button', { class: 'btn small ghost', type: 'button', onclick: () => this.setPassword(p) }, icon('key', 16), 'Passwort'),
               isMe ? null : el('button', { class: 'btn small ghost danger-text', type: 'button', onclick: () => this.remove(p) }, icon('trash', 16), 'Entfernen'))),
+          el('label', { class: 'toggle', style: { margin: '8px 0 4px' } },
+            el('input', { type: 'checkbox', checked: !!p.hide_in_plan, onchange: (e) => this.setHidden(p, e.target.checked) }),
+            ' Im Dienstplan ausblenden'),
           el('div', { class: 'chips' }, S.roles.map((r) => {
             const on = mine.has(r.id);
             return el('button', {
@@ -104,6 +107,16 @@
             }, r.name);
           })));
       }));
+    },
+
+    async setHidden(p, hidden) {
+      App.guard(async () => {
+        const { error } = await App.sb.from('profiles').update({ hide_in_plan: hidden }).eq('id', p.id);
+        if (error) throw error;
+        await App.load.profiles();
+        this.update();
+        App.toast(hidden ? `${App.name(p)} wird im Dienstplan nicht mehr angezeigt.` : `${App.name(p)} wird im Dienstplan wieder angezeigt.`, 'ok');
+      });
     },
 
     async toggleRole(p, role, on) {

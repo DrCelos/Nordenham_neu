@@ -116,7 +116,7 @@
       const today = new Date();
       const st = App.edState();
 
-      let people = S.profiles.slice();
+      let people = S.profiles.filter((p) => !p.hide_in_plan);
       if (this.roleFilter) people = people.filter((p) => App.displayRoles(p.id, st).some((r) => r.id === this.roleFilter));
       // eigene Zeile zuerst, dann alphabetisch
       people.sort((a, b) => (b.id === S.me.id) - (a.id === S.me.id) || App.name(a).localeCompare(App.name(b), 'de'));
@@ -285,7 +285,7 @@
       const personSelect = () => (App.isAdmin()
         ? el('label', { class: 'field' }, 'Planung für',
           el('select', { class: 'input', onchange: (e) => { personId = e.target.value; draw(); } },
-            S.profiles.map((p) => el('option', { value: p.id, selected: p.id === personId }, App.name(p) + (p.id === S.me.id ? ' (ich)' : '')))))
+            S.profiles.filter((p) => !p.hide_in_plan || p.id === personId).map((p) => el('option', { value: p.id, selected: p.id === personId }, App.name(p) + (p.id === S.me.id ? ' (ich)' : '')))))
         : null);
 
       const start = async () => {
@@ -346,7 +346,7 @@
         if (App.isAdmin()) {
           parts.push(el('label', { class: 'field' }, 'Planung für',
             el('select', { class: 'input', onchange: (e) => { personId = e.target.value; go(idx); } },
-              S.profiles.map((p) => el('option', { value: p.id, selected: p.id === personId }, App.name(p) + (p.id === S.me.id ? ' (ich)' : ''))))));
+              S.profiles.filter((p) => !p.hide_in_plan || p.id === personId).map((p) => el('option', { value: p.id, selected: p.id === personId }, App.name(p) + (p.id === S.me.id ? ' (ich)' : ''))))));
         }
 
         parts.push(el('div', { class: 'progress' }, el('i', { style: { width: ((idx + 1) / nDays()) * 100 + '%' } })));

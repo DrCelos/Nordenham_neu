@@ -371,7 +371,7 @@
       S.roles = data;
     },
     async profiles() {
-      const { data, error } = await App.sb.from('profiles').select('id,email,display_name,material_seen_at,created_at');
+      const { data, error } = await App.sb.from('profiles').select('id,email,display_name,hide_in_plan,material_seen_at,created_at');
       if (error) throw error;
       S.profiles = data.sort((a, b) => App.name(a).localeCompare(App.name(b), 'de'));
       if (S.session) S.me = S.profiles.find((p) => p.id === S.session.user.id) || null;
