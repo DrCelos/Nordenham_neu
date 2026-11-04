@@ -321,10 +321,11 @@
     return (App.SHIFT[sh.code] || {}).short || sh.code || 'Dienst';
   };
   App.shiftRange = (sh) => {
-    if (!sh || sh.status !== 'dienst' || !sh.start_at) return '';
+    if (!sh || sh.status === 'frei' || !sh.start_at) return '';
     const a = new Date(sh.start_at), b = new Date(sh.end_at);
     return `${App.fmtTime(a)}–${App.fmtTime(b)}` + (App.isSameDay(a, b) ? '' : ' (+1)');
   };
+  App.canExtern = (pid) => App.hasRole(pid, 'Springer'); // „Dienst in anderem Ortsverband“ nur für Springer
   App.shiftColor = (sh) => ((App.SHIFT[sh.code] || {}).color) || '#475569';
 
   const shiftKey = (pid, day) => pid + '|' + day;
@@ -336,8 +337,9 @@
       payload = { profile_id: pid, day: dayStr, status: 'frei', code: null, start_at: null, end_at: null, is_ed: false };
     } else {
       const t = App.shiftTimes(dayStr, code, custom);
-      const ed = true; // alles, was unter „Dienst“ gewählt wird, ist Einsatzdienst
-      payload = { profile_id: pid, day: dayStr, status: 'dienst', code, start_at: t.start_at, end_at: t.end_at, is_ed: ed };
+      // „dienst“ = Einsatzdienst; „extern“ = Dienst in anderem Ortsverband (nur Info, zählt nicht als Einsatzdienst hier)
+      const ext = status === 'extern';
+      payload = { profile_id: pid, day: dayStr, status: ext ? 'extern' : 'dienst', code, start_at: t.start_at, end_at: t.end_at, is_ed: !ext };
     }
     payload.updated_at = new Date().toISOString();
     const { data, error } = await App.sb.from('shifts').upsert(payload, { onConflict: 'profile_id,day' }).select().single();
