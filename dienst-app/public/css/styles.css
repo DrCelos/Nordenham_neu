@@ -477,3 +477,9 @@ td.cell.edit:hover { outline: 2px solid var(--primary); outline-offset: -2px; }
 /* Planungsassistent: Monatsauswahl */
 .month-pick { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 20px; padding: 8px 0; }
 .month-pick strong { min-width: 190px; text-align: center; }
+
+/* Dienst in anderem Ortsverband: nur Info im Dienstplan */
+.shift.ext { outline: 2px dashed currentColor; outline-offset: -3px; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.22) 0 5px, transparent 5px 10px); }
+.big-btn.ext { background: #64748b; color: #fff; grid-column: 1 / -1; padding: 14px 8px; }
+.big-btn.ext b { font-size: 18px; }
+.plan-legend { margin: 8px 4px 0; }
