@@ -45,7 +45,8 @@
               this.modeBtns,
               el('button', { class: 'btn primary', type: 'button', onclick: () => this.openAssistant() }, icon('wand', 18), 'Planungsassistent'))),
           this.chipsBox),
-        el('div', { class: 'card flush' }, this.wrap)
+        el('div', { class: 'card flush' }, this.wrap),
+        el('p', { class: 'small muted plan-legend' }, 'Gestrichelter Rand = Dienst in einem anderen Ortsverband (nur Info, kein Einsatzdienst hier).')
       );
       this.refresh(true);
     },
@@ -164,9 +165,11 @@
       if (!sh) return null;
       if (sh.status === 'frei') return el('span', { class: 'free' }, week ? 'frei' : '·');
       const label = App.shiftShort(sh);
-      return el('span', { class: 'shift' + (sh.is_ed ? ' ed' : ''), style: { background: App.shiftColor(sh) }, title: `${label} ${App.shiftRange(sh)}` },
+      const ext = sh.status === 'extern';
+      return el('span', { class: 'shift' + (sh.is_ed ? ' ed' : '') + (ext ? ' ext' : ''), style: { background: App.shiftColor(sh) },
+        title: (ext ? 'Dienst in anderem Ortsverband: ' : '') + `${label} ${App.shiftRange(sh)}` },
         el('b', {}, label),
-        week ? el('small', {}, App.shiftRange(sh)) : null);
+        week ? el('small', {}, ext ? 'anderer OV' : App.shiftRange(sh)) : null);
     },
 
     /* ---------- Einzelnen Tag bearbeiten ---------- */
@@ -176,7 +179,7 @@
       const groups = App.shiftOptionsFor(person.id);
       const state = {
         status: existing ? existing.status : null,
-        code: existing && existing.status === 'dienst' ? existing.code : null,
+        code: existing && existing.status !== 'frei' ? existing.code : null,
         s: '09:00', e: '13:00', isEd: false,
       };
       if (existing && existing.code === 'ZEIT' && existing.start_at) {
@@ -191,8 +194,12 @@
         const parts = [];
         parts.push(el('div', { class: 'seg big' },
           el('button', { type: 'button', class: state.status === 'frei' ? 'on free' : '', onclick: () => { state.status = 'frei'; draw(); } }, 'Frei'),
-          el('button', { type: 'button', class: state.status === 'dienst' ? 'on' : '', onclick: () => { state.status = 'dienst'; draw(); } }, 'Dienst')));
-        if (state.status === 'dienst') {
+          el('button', { type: 'button', class: state.status === 'dienst' ? 'on' : '', onclick: () => { state.status = 'dienst'; draw(); } }, 'Dienst'),
+          App.canExtern(person.id) || state.status === 'extern'
+            ? el('button', { type: 'button', class: state.status === 'extern' ? 'on' : '', onclick: () => { state.status = 'extern'; draw(); } }, 'Dienst in anderem OV')
+            : null));
+        if (state.status === 'extern') parts.push(el('p', { class: 'small muted' }, 'Nur zur Info im Dienstplan: Du hast Dienst, aber in einem anderen Ortsverband. Es zählt nicht als Einsatzdienst hier.'));
+        if (state.status === 'dienst' || state.status === 'extern') {
           groups.forEach((g) => {
             parts.push(el('div', { class: 'small muted' }, g.title));
             parts.push(el('div', { class: 'opt-grid' }, g.codes.map((c) => this.optButton(c, state, draw))));
@@ -205,7 +212,7 @@
 
       const save = () => {
         if (!state.status) return App.toast('Bitte Frei oder Dienst wählen.', 'err');
-        if (state.status === 'dienst' && !state.code) return App.toast('Bitte eine Schicht wählen.', 'err');
+        if (state.status !== 'frei' && !state.code) return App.toast('Bitte eine Schicht wählen.', 'err');
         if (state.code === 'ZEIT' && (!state.s || !state.e || state.s === state.e)) return App.toast('Bitte Beginn und Ende angeben.', 'err');
         App.guard(async () => {
           await App.saveShift(person.id, dayStr, { status: state.status, code: state.code, custom: { s: state.s, e: state.e }, isEd: state.isEd });
@@ -264,7 +271,7 @@
       let personId = S.me.id;
       let idx = 0;
       let step = 'month'; // 'month' | 'choose' | 'shift'
-      const state = { code: null, s: '09:00', e: '13:00', isEd: true };
+      const state = { code: null, s: '09:00', e: '13:00', isEd: true, ext: false };
       let m;
 
       const nDays = () => new Date(year, month + 1, 0).getDate();
@@ -299,7 +306,7 @@
       const go = (i) => {
         idx = Math.min(Math.max(0, i), nDays() - 1);
         step = 'choose';
-        state.code = null;
+        state.code = null; state.ext = false;
         draw();
       };
 
@@ -315,7 +322,7 @@
         await App.saveShift(personId, dayStr(idx), payload);
         this.afterChange();
         if (idx < nDays() - 1) go(idx + 1);
-        else { step = 'choose'; state.code = null; draw(); } // letzter Tag: bleiben, dann „Abschließen“
+        else { step = 'choose'; state.code = null; state.ext = false; draw(); } // letzter Tag: bleiben, dann „Abschließen“
       });
 
       const drawMonth = () => {
@@ -353,13 +360,16 @@
         parts.push(el('div', { class: 'small muted center' }, `${App.MONTHS[month]} ${year} · Tag ${idx + 1} von ${nDays()}`));
         parts.push(el('h2', { class: 'center big-date' + (App.isSameDay(date, new Date()) ? ' today' : '') }, App.fmtLong(date)));
         if (cur) parts.push(el('div', { class: 'center small' }, 'Eingetragen: ',
-          cur.status === 'frei' ? el('b', {}, 'frei') : el('b', {}, App.shiftShort(cur) + ' ' + App.shiftRange(cur))));
+          cur.status === 'frei' ? el('b', {}, 'frei') : el('b', {}, App.shiftShort(cur) + ' ' + App.shiftRange(cur) + (cur.status === 'extern' ? ' (anderer OV)' : ''))));
         if (last) parts.push(el('div', { class: 'center small muted' }, 'Das ist der letzte Tag des Monats.'));
 
         if (step === 'choose') {
           parts.push(el('div', { class: 'assist-btns' },
             el('button', { type: 'button', class: 'big-btn free', onclick: () => saveAndNext({ status: 'frei' }) }, el('b', {}, 'Frei'), el('small', {}, last ? 'speichern' : 'weiter zum nächsten Tag')),
-            el('button', { type: 'button', class: 'big-btn duty', onclick: () => { step = 'shift'; draw(); } }, el('b', {}, 'Dienst'), el('small', {}, 'Schicht wählen'))));
+            el('button', { type: 'button', class: 'big-btn duty', onclick: () => { state.ext = false; step = 'shift'; draw(); } }, el('b', {}, 'Dienst'), el('small', {}, 'Schicht wählen')),
+            App.canExtern(person.id)
+              ? el('button', { type: 'button', class: 'big-btn ext', onclick: () => { state.ext = true; step = 'shift'; draw(); } }, el('b', {}, 'Dienst in anderem OV'), el('small', {}, 'nur Info im Plan'))
+              : null));
         } else {
           App.shiftOptionsFor(person.id).forEach((g) => {
             parts.push(el('div', { class: 'small muted' }, g.title));
@@ -367,7 +377,7 @@
               const def = App.SHIFT[c];
               if (def.custom) return this.optButton(c, state, draw);
               return el('button', { type: 'button', class: 'opt', style: { borderColor: def.color },
-                onclick: () => saveAndNext({ status: 'dienst', code: c }) },
+                onclick: () => saveAndNext({ status: state.ext ? 'extern' : 'dienst', code: c }) },
               el('b', {}, def.label), el('small', {}, `${def.s}–${def.e}${def.next ? ' (+1)' : ''}`));
             })));
           });
@@ -375,10 +385,10 @@
             parts.push(this.customTimeBox(state));
             parts.push(el('button', { type: 'button', class: 'btn primary block', onclick: () => {
               if (!state.s || !state.e || state.s === state.e) return App.toast('Bitte Beginn und Ende angeben.', 'err');
-              saveAndNext({ status: 'dienst', code: 'ZEIT', custom: { s: state.s, e: state.e }, isEd: true });
+              saveAndNext({ status: state.ext ? 'extern' : 'dienst', code: 'ZEIT', custom: { s: state.s, e: state.e } });
             } }, last ? 'Übernehmen' : 'Übernehmen & weiter'));
           }
-          parts.push(el('button', { type: 'button', class: 'btn ghost block', onclick: () => { step = 'choose'; state.code = null; draw(); } }, icon('back', 16), 'Zurück'));
+          parts.push(el('button', { type: 'button', class: 'btn ghost block', onclick: () => { step = 'choose'; state.code = null; state.ext = false; draw(); } }, icon('back', 16), 'Zurück'));
         }
 
         parts.push(el('div', { class: 'between assist-nav' },
